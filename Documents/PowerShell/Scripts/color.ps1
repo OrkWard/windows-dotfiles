@@ -1,8 +1,4 @@
-function Show-AnsiColorsDetailed {
-    Write-Host "`n=== ANSI Color Reference ===" -ForegroundColor Cyan
-    
-    # 基础颜色名称
-    Write-Host "`n--- Named Colors ---"
+function Show-Color256 {
     $colors = @(
         @{Code=30; Name="Black"},
         @{Code=31; Name="Red"},
@@ -21,27 +17,19 @@ function Show-AnsiColorsDetailed {
         @{Code=96; Name="BrightCyan"},
         @{Code=97; Name="BrightWhite"}
     )
+
+    Write-Host -NoNewline "    "
     
     foreach ($color in $colors) {
-        $fg = "`e[$($color.Code)m"
-        $bg = "`e[$($color.Code + 10)m"
-        Write-Host "$fg█████`e[0m $bg     `e[0m  $($color.Name.PadRight(15)) FG: ``e[$($color.Code)m  BG: ``e[$($color.Code + 10)m"
+        Write-Host -NoNewline "$($color.Code.ToString().PadRight(4))"
     }
-    
-    # 256 色网格
-    Write-Host "`n--- 256 Colors (0-255) ---"
-    Write-Host "Hover format: ``e[38;5;Nm (foreground) or ``e[48;5;Nm (background)`n"
-    
-    0..255 | ForEach-Object {
-        $num = $_.ToString().PadLeft(3)
-        Write-Host -NoNewline "`e[48;5;${_}m $num `e[0m"
-        
-        if (($_ + 1) % 16 -eq 0) { 
-            Write-Host "" 
-        } elseif (($_ + 1) % 8 -eq 0) {
-            Write-Host -NoNewline "  "
+    Write-Host -NoNewline "`n"
+
+    foreach ($color in $colors) {
+        Write-Host -NoNewline "$(($color.Code + 10).ToString().PadRight(4))"
+        foreach ($fg in $colors) {
+            Write-Host -NoNewline "`e[$($fg.Code);$($color.Code + 10)m A `e[0m "
         }
+        Write-Host -NoNewline "`n"
     }
-    
-    Write-Host "`n"
 }

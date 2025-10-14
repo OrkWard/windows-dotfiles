@@ -1,0 +1,64 @@
+source $VIMRUNTIME/defaults.vim
+
+set tabstop=2
+set softtabstop=2
+set shiftwidth=2
+set expandtab
+set autoindent
+set relativenumber number
+set hidden " Allow buffer to be hidden without save change
+set encoding=utf-8
+set cursorline
+set splitbelow " default split on the below
+set splitright
+set laststatus=2 " Always show status line
+set backspace=2 " Ensure backspace working
+set incsearch " Highlight search work on the fly
+set linebreak
+set virtualedit=block
+set autoread
+
+" set wildmode=longest:full,full
+
+" Display blank characters
+" set list
+set listchars=tab:\|\ ,space:·,extends:>,precedes:<,leadmultispace:\|·,trail:~
+
+" set cursor
+let &t_SI = "\<Esc>[6 q"
+let &t_SR = "\<Esc>[4 q"
+let &t_EI = "\<Esc>[2 q"
+set ttimeoutlen=50
+
+" <Leader> key
+let mapleader = " "
+
+" disable mouse
+set mouse=
+
+" vim-plug
+call plug#begin($APPDATA . '/vim-plug')
+Plug 'editorconfig/editorconfig-vim'
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-repeat'
+Plug 'sonph/onehalf', {'rtp': 'vim/'}
+Plug 'tpope/vim-sleuth'
+Plug 'tpope/vim-commentary'
+Plug 'haya14busa/incsearch.vim'
+Plug 'alvan/vim-closetag'
+Plug 'NLKNguyen/papercolor-theme'
+
+" highlight
+Plug 'kylelaker/riscv.vim'
+Plug 'neoclide/jsonc.vim'
+
+call plug#end()
+
+if has("gui_running")
+  set guifont=JetBrainsMono_NFM:h12:cANSI:qDRAFT
+  set guifontwide=Cascadia_Next_SC:h12:cCHINESEBIG5:qDRAFT
+  set guioptions-=T
+endif
+
+set background=light
+colorscheme onehalflight

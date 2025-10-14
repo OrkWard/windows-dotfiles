@@ -3,33 +3,36 @@ Import-Module AutoJump
 $Env:http_proxy="http://acer:7890";$Env:https_proxy="http://acer:7890"
 $Env:EDITOR="zed -w"
 
-Set-PSReadLineOption -EditMode Emacs -BellStyle None -Colors @{
-    ContinuationPrompt = 'Black'
-    Emphasis = 'DarkMagenta'
-    Error = 'DarkRed'
-    Selection = 'DarkBlue'
-    Default = 'Black'
-    Comment = 'DarkGray'
-    Keyword = 'Magenta'
-    String = 'DarkGreen'
-    Operator = 'DarkRed'
-    Variable = 'DarkRed'
-    Command = 'DarkBlue'
-    Parameter = 'DarkYellow'
-    Type = 'DarkYellow'
-    Number = 'DarkGreen'
-    Member = 'DarkCyan'
-    InlinePrediction = 'Blue'
-    ListPrediction = 'Blue'
-    ListPredictionSelected = 'DarkBlue'
+$PSReadLineOptions = @{
+    EditMode = 'Emacs'
+    BellStyle = 'None'
+    PredictionSource = 'None'
+    Colors = @{
+        ContinuationPrompt = 'Black'
+        Emphasis = 'DarkMagenta'
+        Error = 'DarkRed'
+        Selection = 'DarkBlue'
+        Default = 'Black'
+        Comment = 'DarkGray'
+        Keyword = 'Magenta'
+        String = 'DarkGreen'
+        Operator = 'DarkRed'
+        Variable = 'DarkRed'
+        Command = 'DarkBlue'
+        Parameter = 'DarkYellow'
+        Type = 'DarkYellow'
+        Number = 'DarkGreen'
+        Member = 'DarkCyan'
+        InlinePrediction = 'Blue'
+        ListPrediction = 'Blue'
+        ListPredictionSelected = 'DarkBlue'
+    }
 }
+Set-PSReadLineOption @PSReadLineOptions
 
-# 文件列表配色
 $PSStyle.FileInfo.Directory = "`e[34;1m"
 $PSStyle.FileInfo.SymbolicLink = "`e[35;1m"
 $PSStyle.FileInfo.Executable = "`e[32;1m"
-
-# 表头配色
 $PSStyle.Formatting.TableHeader = "`e[36m"
 
 # Visual Studio 2022 Developer Environment Function
@@ -60,6 +63,7 @@ function ys { yadm status }
 function yp { yadm push }
 
 function vp { vim $PROFILE }
+function vv { vim $HOME/vimfiles/vimrc }
 
 # alias
 Set-Alias -Name which -Value Get-Command
