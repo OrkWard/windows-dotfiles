@@ -1,7 +1,6 @@
-$Env:http_proxy="http://acer:7890";$Env:https_proxy="http://acer:7890"
-
 Import-Module AutoJump
 
+$Env:http_proxy="http://acer:7890";$Env:https_proxy="http://acer:7890"
 $Env:EDITOR="zed -w"
 
 Set-PSReadLineOption -EditMode Emacs -BellStyle None -Colors @{
@@ -50,6 +49,8 @@ function Enable-VsDev {
     }
 }
 
+. "$env:USERPROFILE\Documents\PowerShell\Scripts\color.ps1"
+
 function yadm {
     & "$env:USERPROFILE\Documents\PowerShell\Scripts\yadm.ps1" @args
 }
@@ -59,3 +60,6 @@ function ys { yadm status }
 function yp { yadm push }
 
 function vp { vim $PROFILE }
+
+# alias
+Set-Alias -Name which -Value Get-Command
