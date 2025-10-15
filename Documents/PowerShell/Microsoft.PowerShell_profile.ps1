@@ -30,10 +30,11 @@ $PSReadLineOptions = @{
 }
 Set-PSReadLineOption @PSReadLineOptions
 
-$PSStyle.FileInfo.Directory = "`e[34;1m"
-$PSStyle.FileInfo.SymbolicLink = "`e[35;1m"
-$PSStyle.FileInfo.Executable = "`e[32;1m"
+$PSStyle.FileInfo.Directory = "`e[34m"
+$PSStyle.FileInfo.SymbolicLink = "`e[35m"
+$PSStyle.FileInfo.Executable = "`e[32m"
 $PSStyle.Formatting.TableHeader = "`e[36m"
+$PSStyle.Formatting.FeedbackAction = "`e[35m"
 
 # Visual Studio 2022 Developer Environment Function
 function Enable-VsDev {
@@ -62,8 +63,8 @@ function yc { yadm commit }
 function ys { yadm status }
 function yp { yadm push }
 
-function vp { vim $PROFILE }
-function vv { vim $HOME/vimfiles/vimrc }
+function vp { gvim $PROFILE }
+function vv { gvim $HOME/vimfiles/vimrc }
 
 # alias
 Set-Alias -Name which -Value Get-Command

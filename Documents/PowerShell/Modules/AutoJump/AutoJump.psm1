@@ -165,5 +165,3 @@ function jco {
 
 # 导出函数
 Export-ModuleMember -Function j, jc, jo, jco
-
-Write-Host "AutoJump PowerShell integration loaded. Use 'j <directory>' to jump." -ForegroundColor DarkGreen
