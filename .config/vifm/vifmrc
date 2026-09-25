@@ -1,0 +1,52 @@
+nnoremap w :view<cr>
+nnoremap s :sync<cr>
+if !has('win')
+    nnoremap K :!code %c<cr>
+endif
+
+set relativenumber
+set number
+set statusline="%t %20s %= %-30d %a"
+set timefmt='%b %d, %Y @ %H:%M'
+set ignorecase smartcase nohlsearch incsearch
+
+mark h ~/
+mark d ~/Downloads/
+mark c ~/.config/
+mark l ~/.local
+mark r ~/Repos/
+mark v ~/.local/share/vim-plug/
+mark b ~/.config/bash
+
+colorscheme Paper
+
+set mouse=a
+set tuioptions+=u
+
+fileviewer */ ls --color=always
+fileviewer .*/ ls --color=always
+
+if has('win')
+    fileviewer *.png wezterm imgcat %c
+    fileviewer *.jpeg wezterm imgcat %c
+    fileviewer *.jpg wezterm imgcat %c
+    fileviewer * bat --color=always --style=plain --paging=never %c
+else
+    fileviewer *.png viu
+    fileviewer *.jpeg viu
+    fileviewer *.jpg viu
+    fileviewer * highlight --out-format=ansi --force -qWJ %pw -t 2 %c
+endif
+
+nnoremap <c-n> :touch<space>
+nnoremap <c-k> :mkdir<space>
+
+command Config edit ~/.config/vifm/vifmrc
+
+if has('win')
+    command Diff !difft %c %C
+else
+    command Diff !vimdiff %c %C
+    command Sh !tmux split-window -h -c %d
+    command Sv !tmux split-window -v -c %d
+endif

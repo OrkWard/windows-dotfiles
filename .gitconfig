@@ -1,0 +1,37 @@
+[core]
+	ignorecase = false
+	excludesFile = ~/.config/git/ignore
+[rebase]
+	autoStash = true
+[pull]
+	rebase = true
+[commit]
+	gpgsign = true
+[merge]
+	conflictstyle = zdiff3
+[diff]
+	external = difft
+	algorithm = histogram
+[include]
+	path = .gitconfig.local
+[alias]
+	sw = switch
+	b = branch
+	wt = worktree
+	adog = log --all --decorate --oneline --graph
+	dog = log --decorate --oneline --graph
+	dl = -c diff.external=difft log --ext-diff
+	ds = -c diff.external=difft show --ext-diff
+	dd = -c diff.external=difft diff
+[init]
+	defaultBranch = master
+[credential]
+	helper = cache
+[fetch]
+	prune = true
+[help]
+	autocorrect = 20
+[push]
+	autoSetupRemote = true
+[safe]
+	directory = *
