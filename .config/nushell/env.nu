@@ -17,8 +17,8 @@
 # You can remove these comments if you want or leave
 # them for future reference.
 
-$env.CARGO_HOME = ($env.USERPROFILE | path join 'scoop' 'persist' 'rustup' '.cargo')
-$env.RUSTUP_HOME = ($env.USERPROFILE | path join 'scoop' 'persist' 'rustup' '.rustup')
+$env.CARGO_HOME = ($env.USERPROFILE | path join '.local' 'share' 'cargo')
+$env.RUSTUP_HOME = ($env.USERPROFILE | path join '.local' 'share' 'rustup')
 
 $env.PATH = ($env.PATH
     | prepend ($env.CARGO_HOME | path join 'bin')
