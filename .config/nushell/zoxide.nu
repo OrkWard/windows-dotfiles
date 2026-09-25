@@ -35,7 +35,7 @@ export def --env --wrapped __zoxide_z [...rest: directory] {
   let path = match $rest {
     [] => {'~'},
     [ '-' ] => {'-'},
-    [ $arg ] if ($arg | path expand | path type) == 'dir' => {$arg}
+    [ $arg ] if (try { ($arg | path expand | path type) == 'dir' } catch { false }) => {$arg}
     _ => {
       ^zoxide query --exclude $env.PWD -- ...$rest | str trim -r -c "\n"
     }
