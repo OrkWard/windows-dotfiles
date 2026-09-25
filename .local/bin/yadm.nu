@@ -1,5 +1,5 @@
 def repo-dir [] {
-    $nu.home-dir | path join '.local' 'share' 'windows-dotfiles' 'repo.git'
+    $nu.home-dir | path join '.local' 'share' 'yadm' 'repo.git'
 }
 
 def init-repo [] {
@@ -9,7 +9,7 @@ def init-repo [] {
     }
 
     mkdir ($git_dir | path dirname)
-    ^git init --bare --initial-branch main $git_dir
+    ^git init --bare $git_dir
     ^git $'--git-dir=($git_dir)' config status.showUntrackedFiles no
 }
 
