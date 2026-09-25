@@ -69,7 +69,11 @@ $env.config.hooks.pre_prompt = (
     }
 )
 
+alias rmf = rm --recursive --force
+alias v = hx
+alias l = ls
 alias ll = ls -al
+alias la = ls -a
 
 alias ga = git add --all
 alias gau = git add --update
@@ -84,6 +88,27 @@ alias gl = git pull
 alias gp = git push
 alias gca = git commit --amend
 alias gpf = git push --force-with-lease
+alias gxp = git xpush
+
+alias ys = yadm status
+alias yd = yadm diff
+alias yds = yadm diff --staged
+alias yl = yadm pull
+alias yp = yadm push
+
+def gac [] {
+    git add .
+    if $env.LAST_EXIT_CODE == 0 {
+        git commit --message (date now | format date '%Y-%m-%d %H:%M:%S')
+    }
+}
+
+def yac [] {
+    yadm add --update
+    if $env.LAST_EXIT_CODE == 0 {
+        yadm commit --message (date now | format date '%Y-%m-%d %H:%M:%S')
+    }
+}
 
 def copy []: any -> nothing {
     let input = ($in | into string)
