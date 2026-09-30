@@ -359,8 +359,6 @@ local function spawn_window(saved_window)
   local first_tab = saved_window.tabs[1]
   local options = spawn_options(first_leaf(first_tab.layout))
   options.workspace = saved_window.workspace
-  options.width = math.max(1, math.floor(first_tab.width))
-  options.height = math.max(1, math.floor(first_tab.height))
 
   local ok, tab, pane, mux_window = pcall(mux.spawn_window, options)
   if not ok then

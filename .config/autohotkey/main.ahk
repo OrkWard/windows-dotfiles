@@ -245,6 +245,10 @@ ToggleIME() {
     ManualSetIME(target_ime)
 }
 
+; ==================== Media shortcuts ====================
+
+Launch_Media::Media_Next
+
 ; ==================== WezTerm Left Alt shortcuts ====================
 
 SendWezTermCtrlAlt(key) {
