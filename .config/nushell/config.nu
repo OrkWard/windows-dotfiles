@@ -22,6 +22,21 @@ $env.XDG_DATA_HOME = ($env.USERPROFILE | path join '.local' 'share')
 $env.XDG_STATE_HOME = ($env.USERPROFILE | path join '.local' 'state')
 $env.XDG_CACHE_HOME = ($env.USERPROFILE | path join '.cache')
 
+$env.CARGO_HOME = ($env.USERPROFILE | path join '.local' 'share' 'cargo')
+$env.RUSTUP_HOME = ($env.USERPROFILE | path join '.local' 'share' 'rustup')
+
+$env.PATH = ($env.PATH
+    | prepend ($env.CARGO_HOME | path join 'bin')
+    | prepend ($env.USERPROFILE | path join '.local' 'bin')
+    | prepend ($env.USERPROFILE | path join 'scoop' 'persist' 'nodejs' 'bin')
+    | prepend ($env.USERPROFILE | path join 'scoop' 'apps' 'wezterm-nightly' 'current')
+    | prepend ($env.USERPROFILE | path join 'scoop' 'shims')
+    | uniq)
+
+$env.EDITOR = 'nvim'
+$env.BAT_THEME = 'GitHub'
+$env.VIFM = ($env.USERPROFILE | path join '.config' 'vifm')
+
 $env.config.use_ansi_coloring = true
 $env.config.ls.use_ls_colors = true
 $env.LS_COLORS = ([

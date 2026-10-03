@@ -21,6 +21,9 @@ config.default_prog = {
   nu_config .. '\\env.nu',
 }
 config.default_cwd = home
+config.set_environment_variables = {
+  PATHEXT = '.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.NU',
+}
 
 config.font = wezterm.font 'iA Writer Mono S'
 config.font_size = 12.0
