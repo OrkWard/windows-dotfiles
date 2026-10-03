@@ -18,11 +18,8 @@ config := Map(
 
     ; 规则 3: 固定输入法，这些进程每次聚焦都强制切换，记忆无效
     "pinned_ime", Map(
-        "chrome.exe", 0x0804,
         "wechat.exe", 0x0804,
-        "simplenote.exe", 0x0804,
         "qq.exe", 0x0804,
-        "telegram.exe", 0x0804,
     ),
 
     "hotkey_rules", Map(
