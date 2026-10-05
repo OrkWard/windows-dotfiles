@@ -38,7 +38,41 @@ $env.BAT_THEME = 'GitHub'
 $env.VIFM = ($env.USERPROFILE | path join '.config' 'vifm')
 
 $env.config.use_ansi_coloring = true
+$env.config.cursor_shape = {
+    emacs: block
+    vi_insert: block
+    vi_normal: block
+    helix_insert: block
+    helix_normal: block
+    helix_select: block
+}
 $env.config.ls.use_ls_colors = true
+$env.config.table.index_mode = 'never'
+$env.config.table.trim = {
+    methodology: 'truncating'
+    truncating_suffix: '…'
+}
+# Keep the default right-prompt style, but display time in 24-hour format.
+$env.PROMPT_COMMAND_RIGHT = {||
+    let colors = if (config use-colors) {
+        { date: (ansi magenta), separator: (ansi green), fail: (ansi red_bold) }
+    } else {
+        { date: '', separator: '', fail: '' }
+    }
+    let time_segment = ([
+        (ansi reset)
+        $colors.date
+        (date now | format date '%x %H:%M:%S')
+    ] | str join | str replace --regex --all '([/:])' $'($colors.separator)${1}($colors.date)')
+    let last_exit_code = if $env.LAST_EXIT_CODE != 0 {
+        $'($colors.fail)($env.LAST_EXIT_CODE)'
+    } else {
+        ''
+    }
+
+    $'($last_exit_code) ($time_segment)'
+}
+
 $env.LS_COLORS = ([
     'no=0' 'fi=0'
     'di=1;34' 'ln=1;36' 'ex=1;32'
@@ -84,32 +118,34 @@ $env.config.hooks.pre_prompt = (
     }
 )
 
-alias rmf = rm --recursive --force
-alias v = hx
-alias l = ls
-alias ll = ls -al
-alias la = ls -a
+$env.config.abbreviations = {
+    rmf: 'rm --recursive --force'
+    v: 'nvim'
+    l: 'ls'
+    ll: 'ls -al'
+    la: 'ls -a'
 
-alias ga = git add --all
-alias gau = git add --update
-alias gc = git commit
-alias gcm = git commit --message
-alias gs = git status
-alias gsw = git switch
-alias gsm = git switch master
-alias gd = git diff
-alias gds = git diff --staged
-alias gl = git pull
-alias gp = git push
-alias gca = git commit --amend
-alias gpf = git push --force-with-lease
-alias gxp = git xpush
+    ga: 'git add --all'
+    gau: 'git add --update'
+    gc: 'git commit'
+    gcm: 'git commit --message'
+    gs: 'git status'
+    gsw: 'git switch'
+    gsm: 'git switch master'
+    gd: 'git diff'
+    gds: 'git diff --staged'
+    gl: 'git pull'
+    gp: 'git push'
+    gca: 'git commit --amend'
+    gpf: 'git push --force-with-lease'
+    gxp: 'git xpush'
 
-alias ys = yadm status
-alias yd = yadm diff
-alias yds = yadm diff --staged
-alias yl = yadm pull
-alias yp = yadm push
+    ys: 'yadm status'
+    yd: 'yadm diff'
+    yds: 'yadm diff --staged'
+    yl: 'yadm pull'
+    yp: 'yadm push'
+}
 
 def gac [] {
     git add .
