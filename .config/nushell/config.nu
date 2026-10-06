@@ -21,14 +21,18 @@ $env.XDG_CONFIG_HOME = ($env.USERPROFILE | path join '.config')
 $env.XDG_DATA_HOME = ($env.USERPROFILE | path join '.local' 'share')
 $env.XDG_STATE_HOME = ($env.USERPROFILE | path join '.local' 'state')
 $env.XDG_CACHE_HOME = ($env.USERPROFILE | path join '.cache')
+$env.XDG_RUNTIME_DIR = ($env.USERPROFILE | path join '.local' 'tmp')
 
 $env.CARGO_HOME = ($env.USERPROFILE | path join '.local' 'share' 'cargo')
 $env.RUSTUP_HOME = ($env.USERPROFILE | path join '.local' 'share' 'rustup')
+$env.MC_CONFIG_DIR = ($env.USERPROFILE | path join '.local' 'share' 'mc')
+$env.GOPATH = ($env.USERPROFILE | path join '.local' 'go')
+$env.GOPROXY = 'https://goproxy.cn,direct'
 
 $env.PATH = ($env.PATH
     | prepend ($env.CARGO_HOME | path join 'bin')
+    | prepend ($env.GOPATH | path join 'bin')
     | prepend ($env.USERPROFILE | path join '.local' 'bin')
-    | prepend ($env.USERPROFILE | path join 'scoop' 'persist' 'nodejs' 'bin')
     | prepend ($env.USERPROFILE | path join 'scoop' 'apps' 'wezterm-nightly' 'current')
     | prepend ($env.USERPROFILE | path join 'scoop' 'shims')
     | uniq)
@@ -114,6 +118,21 @@ $env.config.hooks.pre_prompt = (
             let restored = $env.WEZTERM_RESTORE_COMMAND
             hide-env WEZTERM_RESTORE_COMMAND
             commandline edit --replace $restored
+        }
+    }
+)
+
+$env.config.hooks.env_change.PWD = (
+    $env.config.hooks.env_change.PWD? | default []
+    | append { ||
+        if (which direnv | is-empty) {
+            return
+        }
+
+        direnv export json | from json | default {} | load-env
+        # direnv exports PATH as a string; nushell expects a list.
+        if ($env.PATH | describe) == 'string' {
+            $env.PATH = ($env.PATH | split row (char esep))
         }
     }
 )

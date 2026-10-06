@@ -1,0 +1,6 @@
+.shell cmd
+
+# WeType Chinese/English via wetype-cli (~/Repos/wetype-patch/windows)
+alt + a : "C:\Program Files\Tencent\WeType\wetype-mode\wetype-cli.exe" english >nul
+alt + z : "C:\Program Files\Tencent\WeType\wetype-mode\wetype-cli.exe" chinese >nul
+f15 : "C:\Program Files\Tencent\WeType\wetype-mode\wetype-cli.exe" toggle >nul
