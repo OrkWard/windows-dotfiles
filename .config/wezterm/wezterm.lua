@@ -95,7 +95,7 @@ config.use_fancy_tab_bar = false
 config.show_new_tab_button_in_tab_bar = false
 config.show_close_tab_button_in_tabs = false
 config.show_tab_index_in_tab_bar = true
-config.tab_and_split_indices_are_zero_based = true
+config.tab_and_split_indices_are_zero_based = false
 config.switch_to_last_active_tab_when_closing_tab = true
 config.scrollback_lines = 50000
 config.status_update_interval = 1000
@@ -132,7 +132,7 @@ local function show_tabs(window, pane)
     targets[id] = tab
     table.insert(choices, {
       id = id,
-      label = string.format('%d: %s (%d panes)', index - 1, tab_title(tab), #tab:panes()),
+      label = string.format('%d: %s (%d panes)', index, tab_title(tab), #tab:panes()),
     })
   end
 
@@ -204,7 +204,7 @@ local function show_tree(window, pane)
     for _, mux_window in ipairs(mux.all_windows()) do
       if mux_window:get_workspace() == workspace then
         for tab_index, tab in ipairs(mux_window:tabs()) do
-          add(string.format('  %d: %s (%d panes)', tab_index - 1, tab_title(tab), #tab:panes()), {
+          add(string.format('  %d: %s (%d panes)', tab_index, tab_title(tab), #tab:panes()), {
             kind = 'tab',
             workspace = workspace,
             mux_window = mux_window,
@@ -212,7 +212,7 @@ local function show_tree(window, pane)
           })
 
           for _, info in ipairs(tab:panes_with_info()) do
-            add(string.format('    %d: %s — %s', info.index, process_name(info.pane), pane_cwd(info.pane)), {
+            add(string.format('    %d: %s — %s', info.index + 1, process_name(info.pane), pane_cwd(info.pane)), {
               kind = 'pane',
               workspace = workspace,
               mux_window = mux_window,
@@ -294,16 +294,16 @@ config.keys = {
   { key = 'w', mods = 'LEADER', action = act.CloseCurrentTab { confirm = false } },
   { key = 'r', mods = 'LEADER', action = rename_tab },
 
-  { key = '0', mods = 'LEADER', action = act.ActivateTab(0) },
-  { key = '1', mods = 'LEADER', action = act.ActivateTab(1) },
-  { key = '2', mods = 'LEADER', action = act.ActivateTab(2) },
-  { key = '3', mods = 'LEADER', action = act.ActivateTab(3) },
-  { key = '4', mods = 'LEADER', action = act.ActivateTab(4) },
-  { key = '5', mods = 'LEADER', action = act.ActivateTab(5) },
-  { key = '6', mods = 'LEADER', action = act.ActivateTab(6) },
-  { key = '7', mods = 'LEADER', action = act.ActivateTab(7) },
-  { key = '8', mods = 'LEADER', action = act.ActivateTab(8) },
-  { key = '9', mods = 'LEADER', action = act.ActivateTab(9) },
+  { key = '1', mods = 'LEADER', action = act.ActivateTab(0) },
+  { key = '2', mods = 'LEADER', action = act.ActivateTab(1) },
+  { key = '3', mods = 'LEADER', action = act.ActivateTab(2) },
+  { key = '4', mods = 'LEADER', action = act.ActivateTab(3) },
+  { key = '5', mods = 'LEADER', action = act.ActivateTab(4) },
+  { key = '6', mods = 'LEADER', action = act.ActivateTab(5) },
+  { key = '7', mods = 'LEADER', action = act.ActivateTab(6) },
+  { key = '8', mods = 'LEADER', action = act.ActivateTab(7) },
+  { key = '9', mods = 'LEADER', action = act.ActivateTab(8) },
+  { key = '0', mods = 'LEADER', action = act.ActivateTab(9) },
 
   { key = 'p', mods = 'LEADER', action = wezterm.action_callback(show_tabs) },
   { key = 't', mods = 'LEADER', action = wezterm.action_callback(show_tree) },
@@ -318,34 +318,22 @@ config.keys = {
   { key = 'c', mods = 'LEADER', action = act.QuickSelect },
 
   -- Windows equivalents of the Cmd bindings in the Ghostty config.
-  -- Left Alt only; Right Alt stays a plain Alt/Meta for the shell.
-  { key = ',', mods = 'LEFT_ALT', action = act.ReloadConfiguration },
-  { key = '0', mods = 'LEFT_ALT', action = act.ActivateTab(0) },
-  { key = '1', mods = 'LEFT_ALT', action = act.ActivateTab(1) },
-  { key = '2', mods = 'LEFT_ALT', action = act.ActivateTab(2) },
-  { key = '3', mods = 'LEFT_ALT', action = act.ActivateTab(3) },
-  { key = '4', mods = 'LEFT_ALT', action = act.ActivateTab(4) },
-  { key = '5', mods = 'LEFT_ALT', action = act.ActivateTab(5) },
-  { key = '6', mods = 'LEFT_ALT', action = act.ActivateTab(6) },
-  { key = '7', mods = 'LEFT_ALT', action = act.ActivateTab(7) },
-  { key = '8', mods = 'LEFT_ALT', action = act.ActivateTab(8) },
-  { key = '9', mods = 'LEFT_ALT', action = act.ActivateTab(9) },
-  { key = 'd', mods = 'LEFT_ALT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } },
-  { key = 'D', mods = 'LEFT_ALT|SHIFT', action = act.SplitVertical { domain = 'CurrentPaneDomain' } },
-  { key = 'w', mods = 'LEFT_ALT', action = act.CloseCurrentTab { confirm = false } },
-  { key = 's', mods = 'LEFT_ALT', action = wezterm.action_callback(show_workspaces) },
-  { key = 'h', mods = 'LEFT_ALT', action = act.ActivatePaneDirection 'Left' },
-  { key = 'j', mods = 'LEFT_ALT', action = act.ActivatePaneDirection 'Down' },
-  { key = 'k', mods = 'LEFT_ALT', action = act.ActivatePaneDirection 'Up' },
-  { key = 'l', mods = 'LEFT_ALT', action = act.ActivatePaneDirection 'Right' },
-  { key = 'n', mods = 'LEFT_ALT', action = act.SpawnCommandInNewTab { cwd = wezterm.home_dir } },
-  { key = 'N', mods = 'LEFT_ALT|SHIFT', action = act.SpawnTab 'CurrentPaneDomain' },
-  { key = 'p', mods = 'LEFT_ALT', action = wezterm.action_callback(show_tabs) },
-  { key = ';', mods = 'LEFT_ALT', action = act.ActivatePaneDirection 'Prev' },
-  { key = 'o', mods = 'LEFT_ALT', action = act.TogglePaneZoomState },
-  { key = 'f', mods = 'LEFT_ALT', action = act.Search { CaseSmartString = '' } },
-  { key = 'r', mods = 'LEFT_ALT', action = rename_tab },
-  { key = ':', mods = 'LEFT_ALT|SHIFT', action = act.ActivateCommandPalette },
+  -- Ctrl+Shift; punctuation uses phys: so Shift doesn't turn it into </:.
+  { key = 'phys:Comma', mods = 'CTRL|SHIFT', action = act.ReloadConfiguration },
+  { key = 's', mods = 'CTRL|SHIFT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } },
+  { key = 'd', mods = 'CTRL|SHIFT', action = act.SplitVertical { domain = 'CurrentPaneDomain' } },
+  { key = 'w', mods = 'CTRL|SHIFT', action = act.CloseCurrentTab { confirm = false } },
+  { key = 'h', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Left' },
+  { key = 'j', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Down' },
+  { key = 'k', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Up' },
+  { key = 'l', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Right' },
+  { key = 'n', mods = 'CTRL|SHIFT', action = act.SpawnCommandInNewTab { cwd = wezterm.home_dir } },
+  { key = 'p', mods = 'CTRL|SHIFT', action = wezterm.action_callback(show_tabs) },
+  { key = 'phys:Semicolon', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Prev' },
+  { key = 'o', mods = 'CTRL|SHIFT', action = act.TogglePaneZoomState },
+  { key = 'f', mods = 'CTRL|SHIFT', action = act.Search { CaseSmartString = '' } },
+  { key = 'r', mods = 'CTRL|SHIFT', action = rename_tab },
+  { key = 'F1', mods = 'LEADER', action = act.ActivateCommandPalette },
 }
 
 if wezterm.gui then
