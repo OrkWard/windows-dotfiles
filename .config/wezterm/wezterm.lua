@@ -4,7 +4,6 @@ local mux = wezterm.mux
 local session = require 'session'
 local config = wezterm.config_builder()
 local home = wezterm.home_dir
-local nu_config = home .. '\\.config\\nushell'
 
 -- Keep local sessions alive when the GUI detaches.
 config.mux_enable_ssh_agent = false
@@ -14,11 +13,7 @@ config.unix_domains = {
 config.default_gui_startup_args = { 'connect', 'unix' }
 
 config.default_prog = {
-  home .. '\\scoop\\apps\\nu\\current\\nu.exe',
-  '--config-home',
-  nu_config,
-  '--env-config',
-  nu_config .. '\\env.nu',
+  home .. '\\.local\\bin\\elvish.exe',
 }
 config.default_cwd = home
 config.set_environment_variables = {

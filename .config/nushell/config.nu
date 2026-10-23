@@ -28,6 +28,7 @@ $env.RUSTUP_HOME = ($env.USERPROFILE | path join '.local' 'share' 'rustup')
 $env.MC_CONFIG_DIR = ($env.USERPROFILE | path join '.local' 'share' 'mc')
 $env.GOPATH = ($env.USERPROFILE | path join '.local' 'go')
 $env.GOPROXY = 'https://goproxy.cn,direct'
+$env.NIMBLE_DIR = ($env.XDG_DATA_HOME | path join 'nimble')
 
 $env.PATH = ($env.PATH
     | prepend ($env.CARGO_HOME | path join 'bin')
@@ -187,3 +188,4 @@ def copy []: any -> nothing {
 }
 
 source .\zoxide.nu
+source .\dirhist.nu

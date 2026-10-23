@@ -1,6 +1,7 @@
 [core]
 	ignorecase = false
 	excludesFile = ~/.config/git/ignore
+	autocrlf = input
 [rebase]
 	autoStash = true
 [pull]
@@ -25,8 +26,6 @@
 	dd = -c diff.external=difft diff
 [init]
 	defaultBranch = master
-[credential]
-	helper = cache
 [fetch]
 	prune = true
 [help]
