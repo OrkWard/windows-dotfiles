@@ -1,4 +1,4 @@
-# osc.elv: terminal OSC helpers (clipboard, WezTerm user vars).
+# osc.elv: terminal OSC helpers (clipboard, WezTerm user vars, prompt marks).
 # Elvish has no base64 builtin, so it is implemented here.
 
 use str
@@ -41,4 +41,9 @@ fn set-user-var {|name value|
     return
   }
   print "\e]1337;SetUserVar="$name"="(base64 $value)"\a"
+}
+
+# Emit an OSC 133 semantic prompt mark, e.g. `mark-prompt D 1`.
+fn mark-prompt {|@fields|
+  print "\e]133;"(str:join ';' $fields)"\a"
 }

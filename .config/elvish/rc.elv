@@ -16,6 +16,7 @@ set E:XDG_DATA_HOME = (-home .local share)
 set E:XDG_STATE_HOME = (-home .local state)
 set E:XDG_CACHE_HOME = (-home .cache)
 set E:XDG_RUNTIME_DIR = (-home .local tmp)
+set E:DOCKER_CONFIG = (path:join $E:XDG_CONFIG_HOME docker)
 
 set E:CARGO_HOME = (-home .local share cargo)
 set E:RUSTUP_HOME = (-home .local share rustup)
@@ -26,6 +27,7 @@ set E:NIMBLE_DIR = (path:join $E:XDG_DATA_HOME nimble)
 
 set E:EDITOR = nvim
 set E:BAT_THEME = GitHub
+set E:FZF_DEFAULT_OPTS = "--color light --color 'fg+:red,bg+:-1' --pointer ''"
 set E:VIFM = (-home .config vifm)
 set E:GCC_COLORS = 'error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
@@ -166,7 +168,7 @@ set edit:command-abbr = [
   &ga='git add -A'
   &gau='git add -u'
   &gc='git commit'
-  &gcm='git commit -m'
+  &gcm=[&expansion='git commit -m "%"' &set-cursor]
   &gs='git status'
   &gsw='git switch'
   &gsm='git switch master'
@@ -184,10 +186,16 @@ set edit:command-abbr = [
 
 # fish: abbr p0 --position anywhere
 set edit:small-word-abbr = [
-  &p0='>$os:dev-null 2>&1'
+  &p0=[&expansion='%>$os:dev-null 2>&1' &set-cursor]
 ]
 
 # ================ functions ===================
+fn ls {|@args| e:ls --color=auto $@args }
+
+# tree(1) layout on top of erdtree: root on top, no sizes, name order.
+# Later flags win, so e.g. `tree -s rsize` still works.
+fn tree {|@args| erd --layout inverted --suppress-size --sort name -L 2 $@args }
+
 fn -now { date '+%Y-%m-%d %H:%M:%S' }
 
 # yadm is a nushell script in ~/.local/bin.
@@ -212,48 +220,72 @@ fn copy {
 
 # ================ key bindings ===================
 # Ctrl-T: pick a file with fd and insert it at the cursor.
+# fish-style emacs bindings, from the fork's bundled module.
+use fish-binding
+
+# Case-insensitive completion for all completion types.
+set edit:completion:matcher[''] = {|seed| edit:match-prefix $seed &ignore-case }
+
+# Ctrl-T: pick a file with fd + fzf, replacing the token left of the cursor.
 set edit:insert:binding[Ctrl-T] = {
-  var items = [(fd --type f --hidden --follow --exclude .git | each {|f|
-    put [&to-show=$f &to-filter=(str:to-lower $f) &to-accept=$f]
-  })]
-  edit:listing:start-custom $items &caption=' FILES ' &accept={|f|
-    edit:insert-at-dot (repr $f)
+  var tok = (re:find '[^\s]*$' $edit:current-command[..$edit:-dot] | take 1)
+  var picked = []
+  edit:suspend-tty {
+    try {
+      set picked = [(fd --type f --hidden --follow --exclude .git --path-separator / |
+        fzf --query=$tok[text])]
+    } catch { }
+  }
+  if (> (count $picked) 0) {
+    var cmd dot = $edit:current-command $edit:-dot
+    var new = (repr $picked[0])
+    set edit:current-command = $cmd[..$tok[start]]$new$cmd[$dot..]
+    set edit:-dot = (+ $tok[start] (count $new))
   }
 }
 
-# Ctrl-R: history list. Enter runs the entry, Tab only puts it on the line,
-# Esc restores the original line.
-var -saved-line = ''
+# Ctrl-R: search history with fzf. Enter runs the entry, Tab only puts it on
+# the line, Esc keeps the line unchanged.
 set edit:insert:binding[Ctrl-R] = {
-  set -saved-line = $edit:current-command
-  set edit:current-command = ''
-  edit:histlist:start
-}
-set edit:histlist:binding[Enter] = {
-  edit:listing:accept
-  edit:return-line
-}
-set edit:histlist:binding[Tab] = $edit:listing:accept~
-set edit:histlist:binding[Ctrl-'['] = {
-  edit:close-mode
-  set edit:current-command = $-saved-line
+  var out = ''
+  edit:suspend-tty {
+    try {
+      set out = (edit:command-history &cmd-only &dedup &newest-first |
+        each {|c| print $c"\x00" } |
+        fzf --read0 --print0 --no-wrap --no-multi-line '--ellipsis=...' ^
+          --scheme=history --query=$edit:current-command --expect=tab |
+        slurp)
+    } catch { }
+  }
+  if (not-eq $out '') {
+    var key cmd = (str:split "\x00" $out | take 2)
+    set edit:current-command = $cmd
+    if (not-eq $key tab) {
+      edit:return-line
+    }
+  }
 }
 
-# Alt-Left / Alt-Right: prevd / nextd on an empty line, word movement otherwise.
-set edit:insert:binding[Alt-Left] = {
+# Alt-Left/Alt-B, Alt-Right/Alt-F: prevd / nextd on an empty line, word
+# movement otherwise (fish's prevd-or-backward-word / nextd-or-forward-word).
+fn -prevd-or-backward-word {
   if (eq $edit:current-command '') {
     dirhist:prevd
   } else {
-    edit:move-dot-left-word
+    edit:move-dot-left-alnum-word
   }
 }
-set edit:insert:binding[Alt-Right] = {
+fn -nextd-or-forward-word {
   if (eq $edit:current-command '') {
     dirhist:nextd
   } else {
-    edit:move-dot-right-word
+    edit:move-dot-right-alnum-word-end
   }
 }
+set edit:insert:binding[Alt-Left] = $-prevd-or-backward-word~
+set edit:insert:binding[Alt-b] = $-prevd-or-backward-word~
+set edit:insert:binding[Alt-Right] = $-nextd-or-forward-word~
+set edit:insert:binding[Alt-f] = $-nextd-or-forward-word~
 
 # ================ hooks ===================
 # Expose only the currently running command to WezTerm's session snapshot.
@@ -285,6 +317,29 @@ set edit:before-readline = [$@edit:before-readline {
   } catch e {
     echo $e
   }
+}]
+
+# OSC 133 semantic prompt: A before the prompt, C when a command starts, D with
+# its exit status when it ends. B (end of prompt) needs editor support, since
+# the editor draws escapes in the prompt as ^[. Kept last among the
+# before-readline hooks so that nothing prints between A and the prompt.
+# $-osc133-status is $nil while no command is pending; empty lines report 0.
+var -osc133-status = $nil
+set edit:after-readline = [$@edit:after-readline {|line|
+  set -osc133-status = 0
+  osc:mark-prompt C
+}]
+set edit:after-command = [$@edit:after-command {|m|
+  if (not-eq $-osc133-status $nil) {
+    set -osc133-status = $-last-status
+  }
+}]
+set edit:before-readline = [$@edit:before-readline {
+  if (not-eq $-osc133-status $nil) {
+    osc:mark-prompt D $-osc133-status
+    set -osc133-status = $nil
+  }
+  osc:mark-prompt A
 }]
 
 # ================ tool init ===================

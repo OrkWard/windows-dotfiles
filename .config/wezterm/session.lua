@@ -292,9 +292,12 @@ local function first_leaf(node)
   return node
 end
 
-local function spawn_options(leaf)
+local function spawn_options(leaf, domain)
   local command = leaf.command:gsub('%z', '')
   local options = { cwd = leaf.cwd ~= '' and leaf.cwd or wezterm.home_dir }
+  if domain then
+    options.domain = { DomainName = domain }
+  end
   if command ~= '' then
     options.set_environment_variables = { WEZTERM_RESTORE_COMMAND = command }
   end
@@ -355,9 +358,9 @@ local function restore_tab(tab, pane, saved_tab)
   return zoomed
 end
 
-local function spawn_window(saved_window)
+local function spawn_window(saved_window, domain)
   local first_tab = saved_window.tabs[1]
-  local options = spawn_options(first_leaf(first_tab.layout))
+  local options = spawn_options(first_leaf(first_tab.layout), domain)
   options.workspace = saved_window.workspace
 
   local ok, tab, pane, mux_window = pcall(mux.spawn_window, options)
@@ -376,7 +379,7 @@ local function spawn_window(saved_window)
 
   for index = 2, #saved_window.tabs do
     local saved_tab = saved_window.tabs[index]
-    local tab_options = spawn_options(first_leaf(saved_tab.layout))
+    local tab_options = spawn_options(first_leaf(saved_tab.layout), domain)
     local tab_ok, new_tab, new_pane = pcall(function()
       return mux_window:spawn_tab(tab_options)
     end)
@@ -402,29 +405,60 @@ local function spawn_window(saved_window)
   return mux_window
 end
 
-function M.restore()
-  if #mux.all_windows() > 0 then
-    return false
+-- Startup: restore everything into an empty mux.
+-- Manual (opts.manual): like tmux-state restore, only recreate workspaces
+-- that do not exist yet. opts.domain spawns into that domain (GUI client).
+-- Returns ok, message.
+function M.restore(opts)
+  opts = opts or {}
+  if not opts.manual and #mux.all_windows() > 0 then
+    return false, 'mux is not empty'
   end
   local state, err = read_state()
   if not state then
+    local message = 'Restore failed: ' .. tostring(err or 'no saved snapshot')
     if err then
-      wezterm.log_error('Session restore failed: ' .. tostring(err))
+      wezterm.log_error(message)
     end
-    return false
+    return false, message
   end
   if not validate(state) then
     wezterm.log_error('Session restore failed: invalid snapshot structure')
-    return false
+    return false, 'Restore failed: invalid snapshot structure'
   end
 
-  for _, saved_window in ipairs(state.windows) do
-    spawn_window(saved_window)
+  local existing = {}
+  if opts.manual then
+    for _, name in ipairs(mux.get_workspace_names()) do
+      existing[name] = true
+    end
   end
-  if type(state.active_workspace) == 'string' then
+
+  local restored, skipped = {}, {}
+  for _, saved_window in ipairs(state.windows) do
+    local workspace = saved_window.workspace
+    if existing[workspace] then
+      skipped[workspace] = true
+    elseif spawn_window(saved_window, opts.domain) then
+      restored[workspace] = true
+    end
+  end
+  if not opts.manual and type(state.active_workspace) == 'string' then
     pcall(mux.set_active_workspace, state.active_workspace)
   end
-  return #mux.all_windows() > 0
+
+  local function count(set)
+    local n = 0
+    for _ in pairs(set) do
+      n = n + 1
+    end
+    return n
+  end
+  return count(restored) > 0, string.format(
+    'Restored %d workspaces; skipped %d existing workspaces',
+    count(restored),
+    count(skipped)
+  )
 end
 
 return M
