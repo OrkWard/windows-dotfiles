@@ -27,6 +27,7 @@ config.font_size = 12.0
 config.freetype_load_target = 'HorizontalLcd'
 config.freetype_render_target = 'HorizontalLcd'
 config.default_cursor_style = 'SteadyBar'
+config.window_padding = { left = '2px', right = '2px', top = '2px', bottom = '2px' }
 
 config.colors = {
   foreground = '#2A2C33',
@@ -432,6 +433,51 @@ end
 
 local cb = wezterm.action_callback
 
+-- tmux select-pane -L/-D/-U/-R: at the edge, wrap to the far side.
+local function move_pane(direction)
+  return cb(function(window)
+    local tab = window:active_tab()
+    local target = tab:get_pane_direction(direction)
+    if not target then
+      local infos = tab:panes_with_info()
+      local current
+      for _, info in ipairs(infos) do
+        if info.is_active then
+          current = info
+        end
+      end
+      if not current then
+        return
+      end
+      local horizontal = direction == 'Left' or direction == 'Right'
+      local best_edge
+      for _, info in ipairs(infos) do
+        local overlap
+        if horizontal then
+          overlap = info.top < current.top + current.height and current.top < info.top + info.height
+        else
+          overlap = info.left < current.left + current.width and current.left < info.left + info.width
+        end
+        if overlap and info.pane:pane_id() ~= current.pane:pane_id() then
+          -- Wrapping Left lands on the rightmost pane, Right on the leftmost, etc.
+          local edge = ({
+            Left = info.left + info.width,
+            Right = -info.left,
+            Up = info.top + info.height,
+            Down = -info.top,
+          })[direction]
+          if not best_edge or edge > best_edge then
+            target, best_edge = info.pane, edge
+          end
+        end
+      end
+    end
+    if target then
+      target:activate()
+    end
+  end)
+end
+
 -- tmux bind -r: arrows keep working for repeat-time (500ms) after the first.
 local pane_repeat = act.ActivateKeyTable {
   name = 'pane_repeat',
@@ -457,10 +503,10 @@ config.keys = {
 
   { key = 'u', mods = 'LEADER', action = cb(copy_previous_prompt) },
 
-  { key = 'h', mods = 'LEADER', action = act.ActivatePaneDirection 'Left' },
-  { key = 'j', mods = 'LEADER', action = act.ActivatePaneDirection 'Down' },
-  { key = 'k', mods = 'LEADER', action = act.ActivatePaneDirection 'Up' },
-  { key = 'l', mods = 'LEADER', action = act.ActivatePaneDirection 'Right' },
+  { key = 'h', mods = 'LEADER', action = move_pane 'Left' },
+  { key = 'j', mods = 'LEADER', action = move_pane 'Down' },
+  { key = 'k', mods = 'LEADER', action = move_pane 'Up' },
+  { key = 'l', mods = 'LEADER', action = move_pane 'Right' },
   { key = 'o', mods = 'LEADER', action = act.TogglePaneZoomState },
 
   { key = 'D', mods = 'LEADER|SHIFT', action = act.SplitVertical { domain = 'CurrentPaneDomain' } },
@@ -527,10 +573,10 @@ config.keys = {
   { key = 's', mods = 'CTRL|SHIFT', action = cb(show_workspaces) },
   { key = 'd', mods = 'CTRL|SHIFT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } },
   { key = 'w', mods = 'CTRL|SHIFT', action = act.CloseCurrentTab { confirm = false } },
-  { key = 'h', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Left' },
-  { key = 'j', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Down' },
-  { key = 'k', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Up' },
-  { key = 'l', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Right' },
+  { key = 'h', mods = 'CTRL|SHIFT', action = move_pane 'Left' },
+  { key = 'j', mods = 'CTRL|SHIFT', action = move_pane 'Down' },
+  { key = 'k', mods = 'CTRL|SHIFT', action = move_pane 'Up' },
+  { key = 'l', mods = 'CTRL|SHIFT', action = move_pane 'Right' },
   { key = 'n', mods = 'CTRL|SHIFT', action = act.SpawnCommandInNewTab { cwd = wezterm.home_dir } },
   { key = 'p', mods = 'CTRL|SHIFT', action = cb(show_tabs) },
   { key = 'phys:Semicolon', mods = 'CTRL|SHIFT', action = act.ActivatePaneDirection 'Prev' },
@@ -544,7 +590,7 @@ config.keys = {
 for _, arrow in ipairs(arrows) do
   local key, direction = arrow[1], arrow[2]
   for mods, action in pairs {
-    NONE = act.ActivatePaneDirection(direction),
+    NONE = move_pane(direction),
     CTRL = act.AdjustPaneSize { direction, 1 },
     ALT = act.AdjustPaneSize { direction, 5 },
   } do

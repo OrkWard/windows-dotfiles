@@ -156,6 +156,7 @@ set edit:command-abbr = [
   &ys='yadm status'
   &yd='yadm diff'
   &yds='yadm diff --staged'
+  &ycm=[&expansion='yadm commit -m "%"' &set-cursor]
   &yl='yadm pull'
   &yp='yadm push'
 
