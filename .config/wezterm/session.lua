@@ -3,15 +3,20 @@ local mux = wezterm.mux
 
 local M = {}
 local state_path = wezterm.home_dir .. '/.local/state/wezterm-session.json'
+local backup_path = state_path .. '.bak'
 local saving = false
-local last_save = 0
+
+-- Url.file_path on Windows is '/C:/...', which CreateProcessW rejects.
+local function native_path(path)
+  return (path:gsub('^/(%a:)', '%1'))
+end
 
 local function cwd_for(pane)
   local cwd = pane:get_current_working_dir()
   if not cwd then
     return wezterm.home_dir
   end
-  return cwd.file_path or tostring(cwd)
+  return native_path(cwd.file_path or tostring(cwd))
 end
 
 local function bounds(leaves)
@@ -184,9 +189,9 @@ local function write_state(state)
   return true
 end
 
-function M.save(window, notify)
+function M.save(window)
   if saving then
-    return false
+    return false, 'Save already in progress'
   end
   saving = true
   local ok, result, err = pcall(function()
@@ -198,24 +203,14 @@ function M.save(window, notify)
   end)
   saving = false
 
-  local saved = ok and result
-  local message = saved and 'Session saved' or ('Save failed: ' .. tostring(ok and err or result))
-  if notify and window then
-    window:toast_notification('WezTerm session', message, nil, 4000)
+  if ok and result then
+    return true, 'Session saved'
   end
-  if not saved then
-    wezterm.log_error(message)
-  end
-  return saved
+  local message = 'Save failed: ' .. tostring(ok and err or result)
+  wezterm.log_error(message)
+  return false, message
 end
 
-function M.autosave(window)
-  local now = os.time()
-  if now - last_save >= 15 then
-    last_save = now
-    M.save(window, false)
-  end
-end
 
 local function read_state()
   local file = io.open(state_path, 'rb')
@@ -234,7 +229,19 @@ local function read_state()
   if type(state) ~= 'table' or state.version ~= 1 or type(state.windows) ~= 'table' then
     return nil, 'invalid snapshot'
   end
-  return state
+  return state, nil, encoded
+end
+
+-- Autosave overwrites the snapshot within seconds of startup, so keep the
+-- one we started from in case the restore goes wrong.
+local function backup(encoded)
+  local file, err = io.open(backup_path, 'wb')
+  if not file then
+    wezterm.log_error('Session backup failed: ' .. tostring(err))
+    return
+  end
+  file:write(encoded)
+  file:close()
 end
 
 local function valid_leaf(node)
@@ -294,12 +301,19 @@ end
 
 local function spawn_options(leaf, domain)
   local command = leaf.command:gsub('%z', '')
-  local options = { cwd = leaf.cwd ~= '' and leaf.cwd or wezterm.home_dir }
+  local cwd = leaf.cwd ~= '' and native_path(leaf.cwd) or wezterm.home_dir
+  local options = { cwd = cwd }
   if domain then
     options.domain = { DomainName = domain }
   end
   if command ~= '' then
-    options.set_environment_variables = { WEZTERM_RESTORE_COMMAND = command }
+    -- WezTerm drops set_environment_variables unless args is also given, and
+    -- with args it replaces cwd with the active pane's, so the shell cds itself.
+    options.args = M.shell
+    options.set_environment_variables = {
+      WEZTERM_RESTORE_COMMAND = command,
+      WEZTERM_RESTORE_CWD = cwd,
+    }
   end
   return options
 end
@@ -405,16 +419,36 @@ local function spawn_window(saved_window, domain)
   return mux_window
 end
 
--- Startup: restore everything into an empty mux.
+-- The mux server listens before mux-startup runs, so a connecting GUI that
+-- finds no panes spawns its own tab. Close panes outside the restored windows,
+-- after a pause so that spawn has landed.
+local function close_strays(keep_windows)
+  wezterm.sleep_ms(1000)
+  local keep = {}
+  for _, mux_window in ipairs(keep_windows) do
+    keep[mux_window:window_id()] = true
+  end
+  local cli = wezterm.executable_dir .. '\\wezterm.exe'
+  for _, mux_window in ipairs(mux.all_windows()) do
+    if not keep[mux_window:window_id()] then
+      for _, tab in ipairs(mux_window:tabs()) do
+        for _, pane in ipairs(tab:panes()) do
+          wezterm.background_child_process {
+            cli, 'cli', '--prefer-mux', 'kill-pane', '--pane-id', tostring(pane:pane_id()),
+          }
+        end
+      end
+    end
+  end
+end
+
+-- Startup: restore everything, then close the GUI's placeholder tab.
 -- Manual (opts.manual): like tmux-state restore, only recreate workspaces
 -- that do not exist yet. opts.domain spawns into that domain (GUI client).
 -- Returns ok, message.
 function M.restore(opts)
   opts = opts or {}
-  if not opts.manual and #mux.all_windows() > 0 then
-    return false, 'mux is not empty'
-  end
-  local state, err = read_state()
+  local state, err, encoded = read_state()
   if not state then
     local message = 'Restore failed: ' .. tostring(err or 'no saved snapshot')
     if err then
@@ -426,6 +460,9 @@ function M.restore(opts)
     wezterm.log_error('Session restore failed: invalid snapshot structure')
     return false, 'Restore failed: invalid snapshot structure'
   end
+  if not opts.manual then
+    backup(encoded)
+  end
 
   local existing = {}
   if opts.manual then
@@ -434,17 +471,26 @@ function M.restore(opts)
     end
   end
 
-  local restored, skipped = {}, {}
+  local restored, skipped, spawned = {}, {}, {}
   for _, saved_window in ipairs(state.windows) do
     local workspace = saved_window.workspace
     if existing[workspace] then
       skipped[workspace] = true
-    elseif spawn_window(saved_window, opts.domain) then
-      restored[workspace] = true
+    else
+      local mux_window = spawn_window(saved_window, opts.domain)
+      if mux_window then
+        restored[workspace] = true
+        table.insert(spawned, mux_window)
+      end
     end
   end
-  if not opts.manual and type(state.active_workspace) == 'string' then
-    pcall(mux.set_active_workspace, state.active_workspace)
+  if not opts.manual then
+    if type(state.active_workspace) == 'string' then
+      pcall(mux.set_active_workspace, state.active_workspace)
+    end
+    if #spawned > 0 then
+      close_strays(spawned)
+    end
   end
 
   local function count(set)
@@ -460,5 +506,6 @@ function M.restore(opts)
     count(skipped)
   )
 end
+
 
 return M

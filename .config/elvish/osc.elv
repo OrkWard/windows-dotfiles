@@ -1,4 +1,5 @@
-# osc.elv: terminal OSC helpers (clipboard, WezTerm user vars, prompt marks).
+# osc.elv: terminal OSC helpers (clipboard, WezTerm user vars, prompt marks,
+# working directory).
 # Elvish has no base64 builtin, so it is implemented here.
 
 use str
@@ -41,6 +42,16 @@ fn set-user-var {|name value|
     return
   }
   print "\e]1337;SetUserVar="$name"="(base64 $value)"\a"
+}
+
+# Report $dir via OSC 7. Without it WezTerm falls back to the foreground
+# process's cwd, which is wrong for programs that chdir.
+fn set-cwd {|dir|
+  var p = (str:replace '\' / $dir)
+  if (not (str:has-prefix $p /)) {
+    set p = /$p
+  }
+  print "\e]7;file://"$p"\a"
 }
 
 # Emit an OSC 133 semantic prompt mark, e.g. `mark-prompt D 1`.

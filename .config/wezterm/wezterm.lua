@@ -16,6 +16,7 @@ config.default_prog = {
   home .. '\\.local\\bin\\elvish.exe',
 }
 config.default_cwd = home
+session.shell = config.default_prog
 config.set_environment_variables = {
   LANG = 'en_US.UTF-8',
   LC_TIME = 'en_US.UTF-8',
@@ -393,10 +394,6 @@ local function restore_session(_, pane)
   show_message(message)
 end
 
-local function save_and_detach(window, pane)
-  session.save(window, false)
-  window:perform_action(act.DetachDomain 'CurrentPaneDomain', pane)
-end
 
 local function copy_previous_prompt(window, pane)
   window:perform_action(act.ActivateCopyMode, pane)
@@ -495,9 +492,10 @@ local arrows = {
 }
 
 config.keys = {
-  { key = 'd', mods = 'LEADER|CTRL', action = cb(save_and_detach) },
+  { key = 'd', mods = 'LEADER|CTRL', action = act.DetachDomain 'CurrentPaneDomain' },
   { key = 's', mods = 'LEADER|CTRL', action = cb(function(window)
-    session.save(window, true)
+    local _, message = session.save(window)
+    show_message(message)
   end) },
   { key = 'r', mods = 'LEADER|CTRL', action = cb(restore_session) },
 
@@ -643,12 +641,9 @@ if wezterm.gui then
   config.key_tables.copy_mode = copy_mode
 end
 
+-- Saving is manual: F1 C-s.
 wezterm.on('mux-startup', function()
   session.restore()
-end)
-
-wezterm.on('window-config-reloaded', function(window)
-  session.save(window, false)
 end)
 
 wezterm.on('bell', function(_, pane)
@@ -688,7 +683,6 @@ wezterm.on('format-tab-title', function(tab, _, _, _, _, max_width)
 end)
 
 wezterm.on('update-status', function(window)
-  session.autosave(window)
   remember_workspace(wezterm.GLOBAL.current_workspace, window:active_workspace())
   track_pane(window:active_tab())
 
