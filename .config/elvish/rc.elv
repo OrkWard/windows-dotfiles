@@ -69,7 +69,6 @@ fn -uniq-paths {|@dirs|
 
 set paths = [(-uniq-paths ^
   (-home wpk bin) ^
-  (-home scoop shims) ^
   (-home .local bin) ^
   (path:join $E:GOPATH bin) ^
   (path:join $E:CARGO_HOME bin) ^
